@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: concert
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/concert
+    username: concert
+    password: concert
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate

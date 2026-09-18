@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: concert-postgres
+    environment:
+      POSTGRES_DB: concert
+      POSTGRES_USER: concert
+      POSTGRES_PASSWORD: concert
+    ports:
+      - "5432:5432"
+    volumes:
+      - concert_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U concert -d concert"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  concert_postgres_data:

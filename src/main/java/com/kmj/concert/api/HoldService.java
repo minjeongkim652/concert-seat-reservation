@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class HoldService {
@@ -96,5 +97,32 @@ public class HoldService {
                 seats.stream().map(Seat::getLabel).toList(),
                 hold.getExpiresAt()
         );
+    }
+    @Transactional
+    public void cancelHold(UUID holdId, String userId) {
+        Hold hold = holdRepository.findByIdForUpdate(holdId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "선점을 찾을 수 없습니다."
+                ));
+
+        if (!hold.getUserId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "본인이 만든 선점만 취소할 수 있습니다."
+            );
+        }
+
+        if (!hold.isActive()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 취소되었거나 종료된 선점입니다."
+            );
+        }
+
+        List<Seat> seats = seatRepository.findAllByHoldIdForUpdate(holdId);
+
+        hold.cancel();
+        seats.forEach(Seat::release);
     }
 }

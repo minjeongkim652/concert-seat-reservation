@@ -51,6 +51,15 @@ public class Seat {
         this.holdId = holdId;
     }
 
+    public void release() {
+        if (status != SeatStatus.HELD) {
+            throw new IllegalStateException("선점된 좌석만 해제할 수 있습니다.");
+        }
+
+        this.status = SeatStatus.AVAILABLE;
+        this.holdId = null;
+    }
+
     public Long getId() {
         return id;
     }
@@ -70,4 +79,6 @@ public class Seat {
     public UUID getHoldId() {
         return holdId;
     }
+
+
 }

@@ -81,4 +81,20 @@ public class Hold {
     public Instant getExpiresAt() {
         return expiresAt;
     }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public boolean isActive() {
+        return status == HoldStatus.ACTIVE;
+    }
+
+    public void cancel() {
+        if (!isActive()) {
+            throw new IllegalStateException("유효한 선점만 취소할 수 있습니다.");
+        }
+
+        this.status = HoldStatus.CANCELLED;
+    }
 }

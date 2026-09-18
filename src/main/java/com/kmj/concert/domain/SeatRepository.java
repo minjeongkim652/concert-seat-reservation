@@ -1,5 +1,6 @@
 package com.kmj.concert.domain;
 
+import java.util.UUID;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -20,8 +21,19 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
               and seat.label in :seatLabels
             order by seat.id
             """)
+
     List<Seat> findAllForUpdate(
             @Param("performanceId") Long performanceId,
             @Param("seatLabels") List<String> seatLabels
+    );
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select seat
+        from Seat seat
+        where seat.holdId = :holdId
+        order by seat.id
+        """)
+    List<Seat> findAllByHoldIdForUpdate(
+            @Param("holdId") UUID holdId
     );
 }

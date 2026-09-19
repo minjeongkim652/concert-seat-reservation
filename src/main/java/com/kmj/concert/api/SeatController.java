@@ -17,19 +17,23 @@ public class SeatController {
 
     private final PerformanceRepository performanceRepository;
     private final SeatRepository seatRepository;
+    private final HoldExpirationService holdExpirationService;
 
     public SeatController(
             PerformanceRepository performanceRepository,
-            SeatRepository seatRepository
+            SeatRepository seatRepository,
+            HoldExpirationService holdExpirationService
     ) {
         this.performanceRepository = performanceRepository;
         this.seatRepository = seatRepository;
+        this.holdExpirationService = holdExpirationService;
     }
 
     @GetMapping("/{performanceId}/seats")
     public List<SeatResponse> getSeats(
             @PathVariable Long performanceId
     ) {
+        holdExpirationService.expireDueHolds();
         if (!performanceRepository.existsById(performanceId)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,

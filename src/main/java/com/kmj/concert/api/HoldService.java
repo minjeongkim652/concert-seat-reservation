@@ -10,6 +10,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.time.Duration;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,8 +24,8 @@ import java.util.UUID;
 @Service
 public class HoldService {
 
-    private static final Duration HOLD_DURATION = Duration.ofMinutes(5);
-
+    private final HoldExpirationService holdExpirationService;
+    private final Duration holdDuration;
     private final PerformanceRepository performanceRepository;
     private final SeatRepository seatRepository;
     private final HoldRepository holdRepository;
@@ -30,15 +33,20 @@ public class HoldService {
     public HoldService(
             PerformanceRepository performanceRepository,
             SeatRepository seatRepository,
-            HoldRepository holdRepository
+            HoldRepository holdRepository,
+            HoldExpirationService holdExpirationService,
+            @Value("${app.hold-duration}") Duration holdDuration
     ) {
         this.performanceRepository = performanceRepository;
         this.seatRepository = seatRepository;
         this.holdRepository = holdRepository;
+        this.holdExpirationService = holdExpirationService;
+        this.holdDuration = holdDuration;
     }
 
     @Transactional
     public HoldResponse createHold(CreateHoldRequest request) {
+        holdExpirationService.expireDueHolds();
         Set<String> uniqueLabels = new LinkedHashSet<>(request.seatLabels());
 
         if (uniqueLabels.size() != request.seatLabels().size()) {
@@ -85,7 +93,7 @@ public class HoldService {
                 performance,
                 request.userId(),
                 now,
-                HOLD_DURATION
+                holdDuration
         );
 
         holdRepository.save(hold);
@@ -100,6 +108,7 @@ public class HoldService {
     }
     @Transactional
     public void cancelHold(UUID holdId, String userId) {
+        holdExpirationService.expireDueHolds();
         Hold hold = holdRepository.findByIdForUpdate(holdId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,

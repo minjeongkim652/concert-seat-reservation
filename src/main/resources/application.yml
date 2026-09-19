@@ -11,3 +11,6 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+
+app:
+  hold-duration: PT5M

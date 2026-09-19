@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.Duration;
 
@@ -24,6 +25,7 @@ import java.util.UUID;
 @Service
 public class HoldService {
 
+    private final JdbcTemplate jdbcTemplate;
     private final HoldExpirationService holdExpirationService;
     private final Duration holdDuration;
     private final PerformanceRepository performanceRepository;
@@ -34,19 +36,30 @@ public class HoldService {
             PerformanceRepository performanceRepository,
             SeatRepository seatRepository,
             HoldRepository holdRepository,
+            JdbcTemplate jdbcTemplate,
             HoldExpirationService holdExpirationService,
             @Value("${app.hold-duration}") Duration holdDuration
     ) {
         this.performanceRepository = performanceRepository;
         this.seatRepository = seatRepository;
         this.holdRepository = holdRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.holdExpirationService = holdExpirationService;
         this.holdDuration = holdDuration;
     }
 
     @Transactional
     public HoldResponse createHold(CreateHoldRequest request) {
+        lockRequest(request.requestId());
+
         holdExpirationService.expireDueHolds();
+
+        Hold existingHold = holdRepository.findByRequestId(request.requestId())
+                .orElse(null);
+
+        if (existingHold != null) {
+            return toHoldResponse(existingHold);
+        }
         Set<String> uniqueLabels = new LinkedHashSet<>(request.seatLabels());
 
         if (uniqueLabels.size() != request.seatLabels().size()) {
@@ -92,6 +105,7 @@ public class HoldService {
         Hold hold = Hold.createActive(
                 performance,
                 request.userId(),
+                request.requestId(),
                 now,
                 holdDuration
         );
@@ -102,6 +116,7 @@ public class HoldService {
 
         return new HoldResponse(
                 hold.getId(),
+                hold.getPaymentId(),
                 seats.stream().map(Seat::getLabel).toList(),
                 hold.getExpiresAt()
         );
@@ -133,5 +148,23 @@ public class HoldService {
 
         hold.cancel();
         seats.forEach(Seat::release);
+    }
+    private void lockRequest(String requestId) {
+        jdbcTemplate.queryForObject(
+                "SELECT pg_advisory_xact_lock(hashtext(?))",
+                (resultSet, rowNum) -> 0,
+                requestId
+        );
+    }
+
+    private HoldResponse toHoldResponse(Hold hold) {
+        List<Seat> seats = seatRepository.findAllByHoldIdForUpdate(hold.getId());
+
+        return new HoldResponse(
+                hold.getId(),
+                hold.getPaymentId(),
+                seats.stream().map(Seat::getLabel).toList(),
+                hold.getExpiresAt()
+        );
     }
 }

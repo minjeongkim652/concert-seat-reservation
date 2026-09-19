@@ -37,6 +37,18 @@ public class Hold {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "payment_id", nullable = false)
+    private String paymentId;
+
+    @Column(name = "payment_status", nullable = false)
+    private String paymentStatus;
+
+    @Column(name = "payment_occurred_at")
+    private Instant paymentOccurredAt;
+
+    @Column(name = "request_id", nullable = false)
+    private String requestId;
+
     protected Hold() {
     }
 
@@ -44,20 +56,50 @@ public class Hold {
             UUID id,
             Performance performance,
             String userId,
+            String requestId,
             Instant createdAt,
             Instant expiresAt
     ) {
         this.id = id;
+        this.paymentId = "pay-" + id;
+        this.paymentStatus = "PENDING";
         this.performance = performance;
         this.userId = userId;
+        this.requestId = requestId;
         this.status = HoldStatus.ACTIVE;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
     }
+    public String getPaymentId() {
+        return paymentId;
+    }
+    public boolean shouldApplyPaymentEvent(String eventStatus, Instant occurredAt) {
+        if (paymentOccurredAt == null) {
+            return true;
+        }
 
+        int comparison = occurredAt.compareTo(paymentOccurredAt);
+
+        if (comparison > 0) {
+            return true;
+        }
+
+        if (comparison < 0) {
+            return false;
+        }
+
+        return eventStatus.equals("cancelled")
+                && !paymentStatus.equals("CANCELLED");
+    }
+
+    public void applyPaymentEvent(String eventStatus, Instant occurredAt) {
+        this.paymentStatus = eventStatus.toUpperCase();
+        this.paymentOccurredAt = occurredAt;
+    }
     public static Hold createActive(
             Performance performance,
             String userId,
+            String requestId,
             Instant now,
             Duration holdDuration
     ) {
@@ -65,11 +107,14 @@ public class Hold {
                 UUID.randomUUID(),
                 performance,
                 userId,
+                requestId,
                 now,
                 now.plus(holdDuration)
         );
     }
-
+    public String getRequestId() {
+        return requestId;
+    }
     public UUID getId() {
         return id;
     }
@@ -96,5 +141,19 @@ public class Hold {
         }
 
         this.status = HoldStatus.CANCELLED;
+    }
+    public void cancelForPayment() {
+        if (status != HoldStatus.ACTIVE && status != HoldStatus.PAID) {
+            throw new IllegalStateException("This hold cannot be cancelled by payment");
+        }
+
+        this.status = HoldStatus.CANCELLED;
+    }
+    public void markPaid() {
+        if (status != HoldStatus.ACTIVE) {
+            throw new IllegalStateException("Only an active hold can be paid");
+        }
+
+        this.status = HoldStatus.PAID;
     }
 }

@@ -46,7 +46,8 @@ class HoldConcurrencyTest extends IntegrationTestSupport {
                             holdService.createHold(new CreateHoldRequest(
                                     1L,
                                     "user-" + index,
-                                    List.of("A-1")
+                                    List.of("A-1"),
+                                    "req-concurrent-" + index
                             ));
                             return true;
                         } catch (ResponseStatusException exception) {

@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface HoldRepository extends JpaRepository<Hold, UUID> {
+    Optional<Hold> findByRequestId(String requestId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

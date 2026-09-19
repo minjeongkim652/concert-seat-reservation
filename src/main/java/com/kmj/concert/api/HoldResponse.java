@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record HoldResponse(
         UUID holdId,
+        String paymentId,
         List<String> seatLabels,
         Instant expiresAt
 ) {

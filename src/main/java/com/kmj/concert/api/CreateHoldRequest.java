@@ -9,6 +9,7 @@ import java.util.List;
 public record CreateHoldRequest(
         @NotNull Long performanceId,
         @NotBlank String userId,
-        @NotEmpty List<@NotBlank String> seatLabels
+        @NotEmpty List<@NotBlank String> seatLabels,
+        @NotBlank String requestId
 ) {
 }

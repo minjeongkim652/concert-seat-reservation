@@ -60,6 +60,26 @@ public class Seat {
         this.holdId = null;
     }
 
+    public void releaseForPaymentCancellation(UUID holdId) {
+        if (!holdId.equals(this.holdId)) {
+            throw new IllegalStateException("This seat does not belong to this hold");
+        }
+
+        if (status != SeatStatus.HELD && status != SeatStatus.SOLD) {
+            throw new IllegalStateException("This seat cannot be released");
+        }
+
+        this.status = SeatStatus.AVAILABLE;
+        this.holdId = null;
+    }
+    public void sell(UUID holdId) {
+        if (status != SeatStatus.HELD || !this.holdId.equals(holdId)) {
+            throw new IllegalStateException("This seat is not held by this hold");
+        }
+
+        this.status = SeatStatus.SOLD;
+    }
+
     public Long getId() {
         return id;
     }

@@ -7,15 +7,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-@Testcontainers
+
 @SpringBootTest
 public abstract class IntegrationTestSupport {
 
-    @Container
+
     static final PostgreSQLContainer<?> postgres =
             new PostgreSQLContainer<>(
                     DockerImageName.parse("postgres:16-alpine")
@@ -23,7 +21,9 @@ public abstract class IntegrationTestSupport {
                     .withDatabaseName("concert")
                     .withUsername("concert")
                     .withPassword("concert");
-
+    static {
+        postgres.start();
+    }
     @DynamicPropertySource
     static void configureDatabase(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
@@ -32,7 +32,7 @@ public abstract class IntegrationTestSupport {
     }
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void resetDatabase() {

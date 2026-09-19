@@ -28,7 +28,8 @@ class HoldAtomicityTest extends IntegrationTestSupport {
         holdService.createHold(new CreateHoldRequest(
                 1L,
                 "jisu",
-                List.of("A-2")
+                List.of("A-2"),
+                "req-atomic-jisu"
         ));
 
         ResponseStatusException exception = assertThrows(
@@ -36,7 +37,8 @@ class HoldAtomicityTest extends IntegrationTestSupport {
                 () -> holdService.createHold(new CreateHoldRequest(
                         1L,
                         "minsu",
-                        List.of("A-1", "A-2")
+                        List.of("A-1", "A-2"),
+                        "req-atomic-minsu"
                 ))
         );
 
